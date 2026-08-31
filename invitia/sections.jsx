@@ -24,6 +24,9 @@ function Nav({ onCTA }) {
   );
 }
 
+// La palabra más larga define la altura reservada del titular del hero.
+const LONGEST_WORD = EVENTS.map(e => e.word).sort((a, b) => b.length - a.length)[0];
+
 // ----- HERO -----
 function Hero({ onCTA }) {
   const [active, setActive] = useState(0);
@@ -38,6 +41,19 @@ function Hero({ onCTA }) {
   const evt = EVENTS[active];
   const pick = (i) => { setManual(true); setActive(i); };
 
+  const heroTitle = (word, ghost) => (
+    <span
+      className={ghost ? "hero__title__ghost" : "hero__title__live"}
+      aria-hidden={ghost ? "true" : undefined}
+    >
+      Organiza a tus invitados y convierte tu{" "}
+      <span className="rotator">
+        <span key={ghost ? "ghost" : evt.id} className="rotator__item">{word}</span>
+      </span>{" "}
+      en una historia inolvidable.
+    </span>
+  );
+
   return (
     <section className="hero" id="top">
       <div className="wrap">
@@ -45,11 +61,11 @@ function Hero({ onCTA }) {
           <div>
             <span className="eyebrow">Para cualquier evento con invitados</span>
             <h1 className="hero__title">
-              Organiza a tus invitados y convierte tu{" "}
-              <span className="rotator">
-                <span key={evt.id} className="rotator__item">{evt.word}</span>
-              </span>{" "}
-              en una historia inolvidable.
+              {/* El fantasma repite el titular con la palabra más larga y la
+                  MISMA estructura (la palabra es inline-block, no se parte), así
+                  reserva la altura real y el hero no salta al rotar. */}
+              {heroTitle(LONGEST_WORD, true)}
+              {heroTitle(evt.word, false)}
             </h1>
             <p className="hero__sub">
               Invitia conecta tu evento con tus invitados por WhatsApp:

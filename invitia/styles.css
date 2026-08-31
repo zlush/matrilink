@@ -214,7 +214,10 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: inher
   line-height: 1.04;
   margin: 16px 0 20px;
   letter-spacing: -0.04em;
+  position: relative;
 }
+.hero__title__ghost { display: block; visibility: hidden; }
+.hero__title__live { position: absolute; top: 0; left: 0; right: 0; }
 .hero__sub { font-size: 18px; color: var(--gris); line-height: 1.6; max-width: 520px; }
 .hero__cta { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
 .hero__trust {
