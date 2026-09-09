@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Invitación</title>
+<meta name="description" content="Invitación al evento. Confirma tu asistencia." />
+<meta name="theme-color" content="#FDFBF7" />
+<link rel="icon" href="../assets/mark.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="grano" aria-hidden="true"></div>
+
+<main id="app">
+  <div class="cargando"><div class="cargando__marca">Preparando la invitación…</div></div>
+</main>
+
+<noscript>
+  <div class="fallo">
+    <div>
+      <h1>Necesitamos JavaScript</h1>
+      <p>Esta invitación se arma en tu navegador. Actívalo o escríbenos por WhatsApp y te enviamos los datos del evento.</p>
+    </div>
+  </div>
+</noscript>
+
+<script>
+  // Configuración del despliegue.
+  // sheetUrl: la hoja de respuestas del formulario, publicada como CSV
+  //   (Archivo → Compartir → Publicar en la Web → CSV). Vacío = solo respaldo.
+  // El evento se elige con ?evento=<codigo_evento>.
+  // No se pisa si ya viene definida: así el despliegue —o una prueba— puede
+  // inyectar otra configuración antes de que cargue esta página.
+  window.INVITIA_CONFIG = window.INVITIA_CONFIG || {
+    sheetUrl: "",
+    respaldo: "datos/demo.json"
+  };
+</script>
+<script src="datos.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
