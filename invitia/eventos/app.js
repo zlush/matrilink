@@ -34,7 +34,7 @@
   const ICO = {
     flecha: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     whatsapp: '<svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 2a8 8 0 00-7 11.8L2 18l4.4-1A8 8 0 1010 2z" stroke="currentColor" stroke-width="1.3"/><path d="M7 7.4c0-.3.2-.5.5-.5h.7c.2 0 .4.1.5.3l.5 1.2c0 .2 0 .4-.1.5l-.4.4c-.1.1-.1.3 0 .4.4.7 1 1.3 1.7 1.7.1.1.3.1.4 0l.4-.4c.1-.1.3-.2.5-.1l1.2.5c.2.1.3.3.3.5v.7c0 .3-.2.5-.5.5-2.9 0-6-3.1-6-6z" fill="currentColor"/></svg>',
-    lista: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5.5 4h7M5.5 8h7M5.5 12h7M3 4h.01M3 8h.01M3 12h.01" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>',
+    regalo: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 7.5h11v5.5a1 1 0 01-1 1h-9a1 1 0 01-1-1V7.5z" stroke="currentColor" stroke-width="1.2"/><path d="M1.8 5h12.4v2.5H1.8V5zM8 5v9" stroke="currentColor" stroke-width="1.2"/><path d="M8 5S6.6 2 5.2 2.6 5.4 5 8 5zm0 0s1.4-3 2.8-2.4S10.6 5 8 5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>',
     pin: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 14s5-4.2 5-8A5 5 0 003 6c0 3.8 5 8 5 8z" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="6" r="1.8" stroke="currentColor" stroke-width="1.2"/></svg>',
     reloj: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M8 4.8V8l2.2 1.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>',
     mas: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 1.5v9M1.5 6h9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
@@ -171,7 +171,6 @@
           ${limite}
           <div class="rsvp__acciones">
             ${boton(D.linkWhatsapp(e), "Confirmar por WhatsApp", "btn--acento", ICO.whatsapp)}
-            ${boton(e.contacto.listaInvitados, "Ver la lista de invitados", "btn--linea", ICO.lista)}
           </div>
         </div></div>
       </div>
@@ -179,6 +178,12 @@
   }
 
   function detalles(e) {
+    // "Lista de novios" es como se llama en Chile al registro de regalos; en un
+    // evento que no es matrimonio la etiqueta natural es "mesa de regalos".
+    const etiquetaLista = e.tipo === "matrimonio" ? "Ver la lista de novios" : "Ver la mesa de regalos";
+    const extra = {
+      regalos: boton(e.listaNovios, etiquetaLista, "btn--linea", ICO.regalo),
+    };
     const tarjetas = [
       ["dressCode", "Dress code"],
       ["regalos", "Regalos"],
@@ -196,6 +201,7 @@
           ${tarjetas.map(([k, titulo]) => `<div class="shell reveal"><div class="core">
             <div class="detalle__titulo">${esc(titulo)}</div>
             <div class="detalle__texto">${esc(e[k])}</div>
+            ${extra[k] ? `<div class="detalle__accion">${extra[k]}</div>` : ""}
           </div></div>`).join("")}
         </div>
       </div>

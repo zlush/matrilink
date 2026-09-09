@@ -149,7 +149,8 @@
     ceremonia_lugar: ["lugar_de_la_ceremonia"],
     ceremonia_hora: ["hora_de_la_ceremonia"],
     whatsapp_contacto: ["whatsapp_de_contacto", "whatsapp"],
-    link_lista_invitados: ["link_de_la_lista_de_invitados", "lista_de_invitados"],
+    link_lista_novios: ["link_lista_de_novios", "link_de_la_lista_de_novios", "lista_de_novios", "lista_novios",
+      "mesa_de_regalos", "link_mesa_de_regalos", "registro_de_regalos"],
     foto_portada: ["foto_de_portada", "portada"],
     color_acento: ["color_de_acento", "acento"],
     faq: ["preguntas_frecuentes", "preguntas"],
@@ -195,8 +196,10 @@
       },
       contacto: {
         whatsapp: normalizarTelefono(v("whatsapp_contacto")),
-        listaInvitados: v("link_lista_invitados"),
       },
+      // Registro de regalos ("lista de novios" en Chile). La lista de invitados
+      // NO va aquí: es privada del anfitrión y esta página la ve cualquiera.
+      listaNovios: v("link_lista_novios"),
       acento: v("color_acento") || ACENTO_POR_DEFECTO,
       historia: v("historia"),
       dressCode: v("dress_code"),
@@ -216,6 +219,7 @@
     if (Array.isArray(valor)) return valor.length > 0;
     if (nombre === "ubicacion") return Boolean(evento.lugar && (evento.lugar.nombre || evento.lugar.direccion));
     if (nombre === "confirmacion") return Boolean(evento.contacto && evento.contacto.whatsapp);
+    if (nombre === "regalos") return Boolean((evento.regalos || "").trim() || evento.listaNovios);
     return Boolean(valor && String(valor).trim());
   }
 

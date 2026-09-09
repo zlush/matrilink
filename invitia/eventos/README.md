@@ -71,6 +71,11 @@ cumpleaños que solo tiene fecha, lugar y confirmación.
 **Todo lo que escribe el cliente pasa por `escapeHtml` y las URLs por
 `urlSegura`.** El contenido viene de un formulario, no del repositorio.
 
+**La lista de novios sí; la lista de invitados no.** El registro de regalos es
+público y va en la tarjeta de Regalos. La lista de invitados lleva nombres y
+teléfonos de todos, y esta página la abre cualquiera con el link: esa lista se
+queda en el CRM.
+
 **El mapa es un iframe de Google Maps con `output=embed`**, sin API key ni
 facturación. Tarda varios segundos más que el resto de la página en aparecer:
 es normal, no es un error de carga.

@@ -10,8 +10,11 @@ de abajo respetando el título exacto de cada una, y al terminar ve a
 que va en `sheetUrl`, dentro de [invitia/eventos/index.html](../invitia/eventos/index.html).
 
 Los títulos importan: la plantilla convierte cada título de columna a una clave
-(minúsculas, sin tildes, con guiones bajos). "Código del evento" llega como
-`codigo_evento`. Si cambias un título, cambia la clave.
+—minúsculas, sin tildes, con guiones bajos—, así que "Código del evento" llega
+como `codigo_del_evento`. La plantilla reconoce las variantes naturales de cada
+pregunta (con y sin artículos, y los nombres que usan los custom values de GHL),
+pero si inventas un título nuevo, esa columna se ignora en silencio. Ante la
+duda, usa los títulos exactos de las tablas de abajo.
 
 ---
 
@@ -47,7 +50,7 @@ Los títulos importan: la plantilla convierte cada título de columna a una clav
 | # | Pregunta | Tipo | Obligatoria | Ayuda |
 |---|---|---|---|---|
 | 13 | WhatsApp contacto | Respuesta corta | Sí | Número al que escriben los invitados para confirmar, con código de país. |
-| 14 | Link lista invitados | Respuesta corta | No | Link a la lista de invitados. Aparece como botón en la sección de confirmación. |
+| 14 | Link lista de novios | Respuesta corta | No | Link al registro de regalos (Falabella, Paris, Ripley…). Aparece como botón dentro de la tarjeta de Regalos. En eventos que no son matrimonio el botón dice "Ver la mesa de regalos". |
 
 ## Bloque 5 · Contenido de la invitación
 
@@ -68,6 +71,10 @@ vacía no se muestra en la página**. Un cumpleaños que no llena "historia" ni
 | 23 | Color acento | Respuesta corta | Color en formato `#8C6A3F`. Tiñe botones, detalles y títulos. Si se deja vacío queda el dorado por defecto. |
 
 ---
+
+> **La lista de invitados no se publica.** Esta página la abre cualquiera que
+> reciba el link, y la lista lleva nombres y teléfonos de todos los invitados.
+> Vive en el CRM y se comparte solo con el anfitrión, por fuera de la invitación.
 
 ## Correspondencia con GoHighLevel
 

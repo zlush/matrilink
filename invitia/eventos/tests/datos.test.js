@@ -91,7 +91,6 @@ const FILA = {
   direccion: "Camino Lo Ovalle s/n, Casablanca",
   link_ubicacion: "https://maps.google.com/?q=Casablanca",
   whatsapp_contacto: "+56 9 1234 5678",
-  link_lista_invitados: "https://ejemplo.cl/lista",
   historia: "Nos conocimos en 2018.",
   programa: "17:30 | Ceremonia\n19:00 | Cóctel",
   dress_code: "",
@@ -259,4 +258,49 @@ test("filaAEvento acepta los títulos naturales con artículos", () => {
 test("buscarEvento también encuentra por la columna con artículo", () => {
   const objs = [{ codigo_del_evento: "martina-40" }];
   assert.ok(D.buscarEvento(objs, "martina-40"));
+});
+
+// ---------- lista de novios ----------
+
+test("filaAEvento lee el link de la lista de novios", () => {
+  const e = D.filaAEvento({ ...FILA, link_lista_novios: "https://falabella.com/lista/123" });
+  assert.strictEqual(e.listaNovios, "https://falabella.com/lista/123");
+});
+
+test("la lista de novios acepta los nombres alternativos del registro de regalos", () => {
+  assert.strictEqual(
+    D.filaAEvento({ ...FILA, mesa_de_regalos: "https://paris.cl/lista/9" }).listaNovios,
+    "https://paris.cl/lista/9");
+  assert.strictEqual(
+    D.filaAEvento({ ...FILA, lista_de_novios: "https://ripley.cl/lista/7" }).listaNovios,
+    "https://ripley.cl/lista/7");
+});
+
+test("sin lista de novios el campo queda vacío", () => {
+  assert.strictEqual(D.filaAEvento(FILA).listaNovios, "");
+});
+
+test("la sección de regalos aparece aunque solo haya lista de novios", () => {
+  // Un anfitrión puede no escribir texto y dejar solo el link del registro.
+  const soloLista = D.filaAEvento({ ...FILA, regalos: "", link_lista_novios: "https://falabella.com/lista/123" });
+  assert.strictEqual(D.tieneSeccion(soloLista, "regalos"), true);
+
+  const soloTexto = D.filaAEvento({ ...FILA, regalos: "Preferimos aporte para la luna de miel." });
+  assert.strictEqual(D.tieneSeccion(soloTexto, "regalos"), true);
+
+  assert.strictEqual(D.tieneSeccion(D.filaAEvento(FILA), "regalos"), false);
+});
+
+test("la lista de invitados ya no forma parte del evento público", () => {
+  // Es información privada del anfitrión: nombres y teléfonos de todos.
+  const e = D.filaAEvento({ ...FILA, link_lista_invitados: "https://interno.cl/lista" });
+  assert.strictEqual(e.contacto.listaInvitados, undefined);
+  assert.ok(!JSON.stringify(e).includes("interno.cl"));
+});
+
+test("la lista de novios se lee desde el título natural de la columna", () => {
+  // "Link lista de novios" normaliza a link_lista_de_novios.
+  const objs = D.aObjetos(D.parseCSV(
+    "Código del evento,Link lista de novios\nmimi-2026,https://falabella.com/lista/1"));
+  assert.strictEqual(D.filaAEvento(objs[0]).listaNovios, "https://falabella.com/lista/1");
 });

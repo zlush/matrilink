@@ -544,3 +544,5 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 }
 .hero :focus-visible,
 .pie :focus-visible { outline-color: #fff; }
+
+.detalle__accion { margin-top: 1.5rem; }
