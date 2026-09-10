@@ -13,11 +13,10 @@ envíos rompe).
 
 ---
 
-## Campos que faltan crear
+## Los campos que usan
 
-Los 13 campos de invitado ya existen. Los del evento, que son los que estas
-plantillas necesitan para decir fecha, lugar y link, **todavía no**. Hay que
-crearlos como custom fields de contacto:
+Todos existen ya en la sub-cuenta (verificado el 2026-09-09). Los 13 de invitado
+y estos 13 del evento, que la automatización imprime sobre el contacto:
 
 | Nombre al crearlo (sin tildes) | fieldKey resultante | Tipo | Para qué |
 |---|---|---|---|
@@ -32,7 +31,7 @@ crearlos como custom fields de contacto:
 | Direccion del evento | `contact.direccion_del_evento` | TEXT | — |
 | Link de ubicacion | `contact.link_de_ubicacion` | TEXT | Cómo llegar |
 | Link de la invitacion | `contact.link_de_la_invitacion` | TEXT | La landing del evento |
-| Fecha limite de confirmacion | `contact.fecha_limite_de_confirmacion` | TEXT | Urgencia en el recordatorio |
+| Fecha limite de confirmacion | `contact.fecha_limite_de_confirmacion` | DATE | Urgencia en el recordatorio |
 | Whatsapp de contacto | `contact.whatsapp_de_contacto` | TEXT | A quién derivar dudas |
 
 **Créalos sin tildes y renómbralos después.** GHL genera el `fieldKey`
@@ -219,6 +218,11 @@ Mientras más miradas, mejor queda.
 ---
 
 ## Antes de enviarlas
+
+**`fecha_limite_de_confirmacion` es DATE en el contacto**, así que en la
+plantilla 2 se imprime en formato crudo (2026-11-20), no como "20 de
+noviembre". Si quieres que se lea bien, crea un campo de texto equivalente
+—igual que `fecha_del_evento_en_texto`— o acepta el formato de fecha.
 
 **Un campo vacío rompe el envío.** Es el error más común y no es evidente: si
 `{{contact.mesa_asignada}}` está en blanco, Meta rechaza el mensaje completo con

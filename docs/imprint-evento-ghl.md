@@ -27,16 +27,22 @@ siguiente y quedaron invitados del anterior sin etiquetar, esos heredarán los
 datos equivocados. La regla: cargar valores → etiquetar a todos → recién ahí
 cargar el evento siguiente.
 
-## Lo que hay hoy en la sub-cuenta
+## Estado en la sub-cuenta
 
-Verificado el 2026-09-09 en `kEZKnFdhkbuCT1BBR0pv`: los 11 custom values que
-existen son **de marca**, en la carpeta *Invitia* — Nombre de la marca, Sitio
-web, WhatsApp de contacto, Instagram, Horario de atención, y los links de
-privacidad, términos, WhatsApp y agendamiento. **Ninguno es del evento.**
+Ejecutado el 2026-09-09 en `kEZKnFdhkbuCT1BBR0pv`:
 
-Esos no se tocan. Los 13 de abajo son nuevos.
+- **24 custom values**: los 11 de marca que ya estaban (carpeta *Invitia*) más
+  los 13 del evento, creados con el prefijo `Evento · ` y cargados con el evento
+  de demostración.
+- **37 custom fields de contacto**: los 13 de invitado y los 13 del evento ya
+  existían salvo `whatsapp_de_contacto`, que se creó en la misma carpeta que sus
+  hermanos (`parentId` sí se acepta al crear un custom field, a diferencia de los
+  custom values).
 
-## Los 13 custom values a crear
+Los de marca no se tocan. El script tiene una guarda que aborta si el mapeo
+apunta a alguno de ellos.
+
+## Los 13 custom values del evento
 
 | Crear con este nombre | Renombrar a | Clave resultante | Se imprime en |
 |---|---|---|---|

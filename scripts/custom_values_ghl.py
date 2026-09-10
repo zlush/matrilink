@@ -30,13 +30,24 @@ import subprocess
 import sys
 import unicodedata
 
+# La consola de Windows usa cp1252 y revienta con ✓ o ·. Un error de impresión
+# no puede abortar un proceso de escritura a medio camino.
+for flujo in (sys.stdout, sys.stderr):
+    try:
+        flujo.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
+
 LOCATION_ID = "kEZKnFdhkbuCT1BBR0pv"
 API = "https://services.leadconnectorhq.com"
 VERSION = "2021-07-28"
 BASE_URL = "https://invitia-weld.vercel.app/eventos/"
 
 # Columna de la hoja  ->  fieldKey del custom value en GHL
+# El WhatsApp va a whatsapp_del_anfitrion: whatsapp_de_contacto es el custom
+# value de marca, con el número de Invitia, y no se toca.
 MAPA = [
+    ("codigo_evento", "codigo_del_evento"),
     ("tipo_evento", "tipo_de_evento"),
     ("nombre_evento", "nombre_del_evento"),
     ("nombre_anfitriones", "nombre_del_anfitrion"),
@@ -46,8 +57,29 @@ MAPA = [
     ("lugar_nombre", "lugar_del_evento"),
     ("direccion", "direccion_del_evento"),
     ("link_ubicacion", "link_de_ubicacion"),
-    ("whatsapp_contacto", "whatsapp_de_contacto"),
+    ("whatsapp_contacto", "whatsapp_del_anfitrion"),
 ]
+
+MARCA = {
+    "email_de_contacto", "horario_de_atencion", "instagram", "link_de_whatsapp",
+    "link_de_politica_de_privacidad", "link_de_terminos_y_condiciones",
+    "link_para_agendar_demo", "nombre_de_la_marca", "nombre_del_asesor",
+    "sitio_web", "whatsapp_de_contacto",
+}
+
+DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+         "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+
+
+def fecha_en_texto(iso):
+    """2026-12-12 -> sábado 12 de diciembre de 2026 (igual que datos.js)."""
+    import datetime
+    try:
+        f = datetime.date.fromisoformat(str(iso).strip())
+    except ValueError:
+        return ""
+    return f"{DIAS[f.weekday()]} {f.day} de {MESES[f.month - 1]} de {f.year}"
 
 # Mismos alias que invitia/eventos/datos.js: los títulos naturales del
 # formulario no normalizan a la clave canónica ("Código del evento" da
@@ -92,6 +124,13 @@ def valores_del_evento(fila, base_url=BASE_URL):
         valores[field_key] = valor_de(fila, columna)
     codigo = valor_de(fila, "codigo_evento")
     valores["link_de_la_invitacion"] = f"{base_url}?evento={codigo}" if codigo else ""
+    valores["fecha_del_evento_en_texto"] = fecha_en_texto(valor_de(fila, "fecha_evento"))
+
+    # Guarda dura: los custom values de marca son de la sub-cuenta, no del
+    # evento. Escribir sobre ellos ya pisó una vez el WhatsApp de Invitia.
+    invasores = sorted(set(valores) & MARCA)
+    if invasores:
+        raise SystemExit("El mapeo apunta a custom values de marca: " + ", ".join(invasores))
     return valores
 
 
@@ -118,15 +157,21 @@ def curl(metodo, ruta, token, cuerpo=None):
            "-H", f"Authorization: Bearer {token}",
            "-H", f"Version: {VERSION}",
            "-H", "Accept: application/json"]
+    entrada = None
     if cuerpo is not None:
-        cmd += ["-H", "Content-Type: application/json", "-d", json.dumps(cuerpo, ensure_ascii=False)]
-    r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
+        # El cuerpo va por stdin, no como argumento: en Windows los argumentos
+        # de la línea de comandos se recodifican a cp1252 y las tildes llegan
+        # rotas ("Código" queda como "CÃ³digo" del lado de GHL).
+        cmd += ["-H", "Content-Type: application/json; charset=utf-8", "-d", "@-"]
+        entrada = json.dumps(cuerpo, ensure_ascii=False).encode("utf-8")
+    r = subprocess.run(cmd, input=entrada, capture_output=True)
     if r.returncode != 0:
-        raise SystemExit(f"curl falló: {r.stderr[:300]}")
+        raise SystemExit(f"curl falló: {r.stderr.decode('utf-8', 'replace')[:300]}")
+    salida = r.stdout.decode("utf-8", "replace")
     try:
-        return json.loads(r.stdout or "{}")
+        return json.loads(salida or "{}")
     except json.JSONDecodeError:
-        raise SystemExit(f"Respuesta no JSON de {ruta}: {r.stdout[:300]}")
+        raise SystemExit(f"Respuesta no JSON de {ruta}: {salida[:300]}")
 
 
 def listar_custom_values(token):
@@ -178,15 +223,6 @@ CANONICOS = [
     # por el custom value de marca, con el número de Invitia.
     ("whatsapp_del_anfitrion", "Whatsapp del anfitrion", "WhatsApp del anfitrión", "contact.whatsapp_de_contacto"),
 ]
-
-# Custom values de marca que ya viven en la sub-cuenta (carpeta "Invitia").
-# No son del evento: no se tocan, y ninguno de los nuevos puede pisarlos.
-MARCA = {
-    "email_de_contacto", "horario_de_atencion", "instagram", "link_de_whatsapp",
-    "link_de_politica_de_privacidad", "link_de_terminos_y_condiciones",
-    "link_para_agendar_demo", "nombre_de_la_marca", "nombre_del_asesor",
-    "sitio_web", "whatsapp_de_contacto",
-}
 
 # Sin token no se puede consultar la sub-cuenta: para planificar se asume el
 # estado verificado el 2026-09-09, donde no existe ningún custom value de evento.
@@ -276,7 +312,9 @@ def self_test():
     assert v["nombre_del_anfitrion"] == "Mimi & Beto", v
     assert v["link_de_la_invitacion"] == "https://ejemplo.cl/eventos/?evento=mimi-2026", v
     assert v["fecha_limite_de_confirmacion"] == "", v      # ausente = vacío, no falla
-    assert len(v) == 11, f"se esperaban 11 custom values, hay {len(v)}"
+    assert v["whatsapp_del_anfitrion"] == "+56 9 1234 5678", v
+    assert "whatsapp_de_contacto" not in v, "no se toca el custom value de marca"
+    assert len(v) == 13, f"se esperaban 13 custom values, hay {len(v)}"
     assert normalizar_clave("Fecha límite de confirmación") == "fecha_limite_de_confirmacion"
     assert valores_del_evento({})["link_de_la_invitacion"] == ""
     assert len(CANONICOS) == 13, len(CANONICOS)
@@ -290,6 +328,12 @@ def self_test():
     # Ninguno puede pisar un custom value de marca ya existente.
     choques = [c[0] for c in CANONICOS if c[0] in MARCA]
     assert not choques, f"colisión con custom values de marca: {choques}"
+    v13 = valores_del_evento({"codigo_del_evento": "x", "fecha_del_evento": "2026-12-12"})
+    assert len(v13) == 13, f"la carga debe cubrir los 13, cubre {len(v13)}"
+    assert set(v13) == {c[0] for c in CANONICOS}, set(v13) ^ {c[0] for c in CANONICOS}
+    assert not set(v13) & MARCA, "la carga nunca puede tocar un custom value de marca"
+    assert v13["fecha_del_evento_en_texto"] == "sábado 12 de diciembre de 2026", v13["fecha_del_evento_en_texto"]
+    assert fecha_en_texto("no es fecha") == ""
     print("self-test OK: 13 custom values de evento, ninguno choca con los de marca")
     print("             mapeo custom value -> custom field completo")
 
