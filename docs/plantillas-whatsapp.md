@@ -40,10 +40,10 @@ crearlos como custom fields de contacto:
 evento" produce `contact.cdigo_del_evento`. Al renombrar, el fieldKey ya no
 cambia.
 
-**Cada uno tiene su custom value análogo**, que es lo que la automatización
-copia al contacto. Once ya existen en la sub-cuenta; los dos que faltan
-—`codigo_del_evento` y `fecha_del_evento_en_texto`— los crea
-`scripts/custom_values_ghl.py --crear-faltantes --send`.
+**Cada uno necesita su custom value análogo**, que es lo que la automatización
+imprime sobre el contacto. Ninguno existe todavía: los 11 custom values de la
+sub-cuenta son de marca. El mapeo completo y cómo crearlos está en
+[imprint-evento-ghl.md](imprint-evento-ghl.md).
 
 **Fecha del evento va dos veces, y no es redundancia.** El campo DATE sirve para
 que el workflow dispare "3 días antes", pero al imprimirlo en un mensaje sale en

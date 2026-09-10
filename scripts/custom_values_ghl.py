@@ -159,24 +159,38 @@ def listar_custom_values(token):
 
 PREFIJO = "Evento · "
 
+# (clave del custom value, nombre con el que se crea, nombre final, custom field
+#  del contacto sobre el que la automatización lo imprime)
 CANONICOS = [
-    ("codigo_del_evento", "Codigo del evento", "Código del evento"),
-    ("tipo_de_evento", "Tipo de evento", "Tipo de evento"),
-    ("nombre_del_evento", "Nombre del evento", "Nombre del evento"),
-    ("nombre_del_anfitrion", "Nombre del anfitrion", "Nombre del anfitrión"),
-    ("fecha_del_evento", "Fecha del evento", "Fecha del evento"),
-    ("fecha_del_evento_en_texto", "Fecha del evento en texto", "Fecha del evento en texto"),
-    ("hora_del_evento", "Hora del evento", "Hora del evento"),
-    ("lugar_del_evento", "Lugar del evento", "Lugar del evento"),
-    ("direccion_del_evento", "Direccion del evento", "Dirección del evento"),
-    ("link_de_ubicacion", "Link de ubicacion", "Link de ubicación"),
-    ("link_de_la_invitacion", "Link de la invitacion", "Link de la invitación"),
-    ("fecha_limite_de_confirmacion", "Fecha limite de confirmacion", "Fecha límite de confirmación"),
-    ("whatsapp_de_contacto", "Whatsapp de contacto", "WhatsApp de contacto"),
+    ("codigo_del_evento", "Codigo del evento", "Código del evento", "contact.codigo_del_evento"),
+    ("tipo_de_evento", "Tipo de evento", "Tipo de evento", "contact.tipo_de_evento"),
+    ("nombre_del_evento", "Nombre del evento", "Nombre del evento", "contact.nombre_del_evento"),
+    ("nombre_del_anfitrion", "Nombre del anfitrion", "Nombre del anfitrión", "contact.nombre_del_anfitrion"),
+    ("fecha_del_evento", "Fecha del evento", "Fecha del evento", "contact.fecha_del_evento"),
+    ("fecha_del_evento_en_texto", "Fecha del evento en texto", "Fecha del evento en texto", "contact.fecha_del_evento_en_texto"),
+    ("hora_del_evento", "Hora del evento", "Hora del evento", "contact.hora_del_evento"),
+    ("lugar_del_evento", "Lugar del evento", "Lugar del evento", "contact.lugar_del_evento"),
+    ("direccion_del_evento", "Direccion del evento", "Dirección del evento", "contact.direccion_del_evento"),
+    ("link_de_ubicacion", "Link de ubicacion", "Link de ubicación", "contact.link_de_ubicacion"),
+    ("link_de_la_invitacion", "Link de la invitacion", "Link de la invitación", "contact.link_de_la_invitacion"),
+    ("fecha_limite_de_confirmacion", "Fecha limite de confirmacion", "Fecha límite de confirmación", "contact.fecha_limite_de_confirmacion"),
+    # Se llama "del anfitrión" a propósito: whatsapp_de_contacto ya está tomado
+    # por el custom value de marca, con el número de Invitia.
+    ("whatsapp_del_anfitrion", "Whatsapp del anfitrion", "WhatsApp del anfitrión", "contact.whatsapp_de_contacto"),
 ]
 
-# Los que ya existían el 2026-09-08, para poder planificar sin red.
-YA_EXISTIAN = {k for k, _, _ in CANONICOS} - {"codigo_del_evento", "fecha_del_evento_en_texto"}
+# Custom values de marca que ya viven en la sub-cuenta (carpeta "Invitia").
+# No son del evento: no se tocan, y ninguno de los nuevos puede pisarlos.
+MARCA = {
+    "email_de_contacto", "horario_de_atencion", "instagram", "link_de_whatsapp",
+    "link_de_politica_de_privacidad", "link_de_terminos_y_condiciones",
+    "link_para_agendar_demo", "nombre_de_la_marca", "nombre_del_asesor",
+    "sitio_web", "whatsapp_de_contacto",
+}
+
+# Sin token no se puede consultar la sub-cuenta: para planificar se asume el
+# estado verificado el 2026-09-09, donde no existe ningún custom value de evento.
+YA_EXISTIAN = set()
 
 
 def faltantes(existentes):
@@ -193,11 +207,14 @@ def crear_faltantes(token, prefijo, aplicar):
     print()
     if not faltan:
         print("No hay nada que crear.")
-    for clave, sin_tildes, bonito in faltan:
+    for clave, sin_tildes, bonito, campo in faltan:
         destino = prefijo + bonito
         print(f"  + {clave}")
         print(f"      crear como  '{sin_tildes}'   -> fieldKey {{{{ custom_values.{clave} }}}}")
         print(f"      renombrar a '{destino}'")
+        print(f"      se imprime en  {campo}")
+        if clave in MARCA:
+            print("      ! choca con un custom value de marca, hay que renombrarlo")
         if not aplicar:
             continue
         r = curl("POST", f"/locations/{LOCATION_ID}/customValues", token,
@@ -225,7 +242,7 @@ def renombrar_con_prefijo(token, prefijo, aplicar):
     """Antepone el prefijo a los custom values de evento que ya existen."""
     existentes = listar_custom_values(token)
     tocados = 0
-    for clave, _, bonito in CANONICOS:
+    for clave, _, bonito, _campo in CANONICOS:
         cv = existentes.get(clave)
         if not cv:
             continue
@@ -262,15 +279,19 @@ def self_test():
     assert len(v) == 11, f"se esperaban 11 custom values, hay {len(v)}"
     assert normalizar_clave("Fecha límite de confirmación") == "fecha_limite_de_confirmacion"
     assert valores_del_evento({})["link_de_la_invitacion"] == ""
-    faltan = [c[0] for c in faltantes(YA_EXISTIAN)]
-    assert faltan == ["codigo_del_evento", "fecha_del_evento_en_texto"], faltan
     assert len(CANONICOS) == 13, len(CANONICOS)
+    assert len(faltantes(YA_EXISTIAN)) == 13, "hoy no existe ningún custom value de evento"
     assert not faltantes({c[0] for c in CANONICOS}), "con todos presentes no debe faltar ninguno"
-    # El nombre para crear no lleva tildes: es lo que deja el fieldKey limpio.
-    for clave, sin_tildes, _ in CANONICOS:
+    # El nombre con el que se crea no lleva tildes ni prefijo: es lo que deja
+    # limpio el fieldKey, porque GHL borra las letras acentuadas.
+    for clave, sin_tildes, _, campo in CANONICOS:
         assert normalizar_clave(sin_tildes) == clave, (sin_tildes, clave)
-    print("self-test OK: 11 custom values del evento, alias y tildes resueltos")
-    print("             13 canónicos, faltan " + ", ".join(faltan))
+        assert campo.startswith("contact."), campo
+    # Ninguno puede pisar un custom value de marca ya existente.
+    choques = [c[0] for c in CANONICOS if c[0] in MARCA]
+    assert not choques, f"colisión con custom values de marca: {choques}"
+    print("self-test OK: 13 custom values de evento, ninguno choca con los de marca")
+    print("             mapeo custom value -> custom field completo")
 
 
 def main():
