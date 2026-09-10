@@ -109,6 +109,19 @@
 
   function soloDigitos(s) { return String(s || "").replace(/\D/g, ""); }
 
+  // El tipo llega como lo escribió el cliente o como lo guarda GHL ("Matrimonio"
+  // con mayúscula, porque su lista de opciones es así). La plantilla lo usa para
+  // elegir portada y encabezado, así que se reduce a una clave estable.
+  function tipoDeEvento(texto) {
+    const t = normalizarClave(texto);
+    if (!t) return "evento";
+    if (t.indexOf("matrimonio") !== -1 || t.indexOf("boda") !== -1) return "matrimonio";
+    if (t.indexOf("cumple") !== -1) return "cumpleanos";
+    if (t.indexOf("corporativ") !== -1) return "corporativo";
+    if (t.indexOf("graduacion") !== -1) return "graduacion";
+    return t;
+  }
+
   // Todo lo que se inyecta en el DOM pasa por aquí: el contenido lo escribe el
   // cliente en un formulario, no nosotros.
   function escapeHtml(s) {
@@ -179,7 +192,7 @@
     return {
       portada: v("foto_portada") || fotos[0] || "",
       codigo: v("codigo_evento"),
-      tipo: v("tipo_evento") || "evento",
+      tipo: tipoDeEvento(v("tipo_evento")),
       nombre: v("nombre_evento"),
       anfitriones: v("nombre_anfitriones"),
       fecha: {
@@ -314,7 +327,7 @@
     ACENTO_POR_DEFECTO,
     parseCSV, aObjetos, buscarEvento,
     parseLineas, parsePrograma, parseFaq,
-    normalizarTelefono, escapeHtml, urlSegura, valorDe, filaAEvento, tieneSeccion,
+    normalizarTelefono, escapeHtml, urlSegura, valorDe, tipoDeEvento, filaAEvento, tieneSeccion,
     formatearFechaLarga, fechaLocal, cuentaRegresiva,
     linkWhatsapp, linkMapaEmbebido, linkComoLlegar,
     cargarEvento,

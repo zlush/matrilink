@@ -316,3 +316,16 @@ test("con varias respuestas del mismo evento gana la última", () => {
   assert.strictEqual(D.buscarEvento(objs, "mimi-2026").lugar_nombre, "Salón nuevo");
   assert.strictEqual(D.buscarEvento(objs, "otro-2026").lugar_nombre, "Otro lugar");
 });
+
+test("el tipo de evento se normaliza a una clave interna", () => {
+  // En GHL la opción es "Matrimonio" con mayúscula; la plantilla usa el tipo
+  // para elegir portada y encabezado, y no puede depender de cómo venga escrito.
+  assert.strictEqual(D.filaAEvento({ tipo_evento: "Matrimonio" }).tipo, "matrimonio");
+  assert.strictEqual(D.filaAEvento({ tipo_evento: "matrimonio" }).tipo, "matrimonio");
+  assert.strictEqual(D.filaAEvento({ tipo_evento: "Boda" }).tipo, "matrimonio");
+  assert.strictEqual(D.filaAEvento({ tipo_evento: "Cumpleaños" }).tipo, "cumpleanos");
+  assert.strictEqual(D.filaAEvento({ tipo_evento: "Evento corporativo" }).tipo, "corporativo");
+  assert.strictEqual(D.filaAEvento({ tipo_evento: "Graduación" }).tipo, "graduacion");
+  assert.strictEqual(D.filaAEvento({ tipo_evento: "Baby shower" }).tipo, "baby_shower");
+  assert.strictEqual(D.filaAEvento({}).tipo, "evento");
+});

@@ -72,6 +72,33 @@ MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
          "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
 
 
+# El custom field "Tipo de evento" es una lista con estas opciones exactas. Si
+# el custom value no coincide letra por letra, GHL descarta el valor al copiarlo
+# y el campo queda vacío sin dar ningún error.
+OPCIONES_TIPO = ["Matrimonio", "Cumpleaños", "Evento corporativo", "Graduación",
+                 "Baby shower", "Quinceañero", "Conferencia o feria",
+                 "Aniversario o gala", "Otro"]
+
+
+def tipo_para_ghl(texto):
+    """Lo que escriba el cliente -> la opción exacta de la lista de GHL."""
+    t = normalizar_clave(texto)
+    if not t:
+        return ""
+    if "matrimonio" in t or "boda" in t:
+        return "Matrimonio"
+    if "cumple" in t:
+        return "Cumpleaños"
+    if "corporativ" in t:
+        return "Evento corporativo"
+    if "graduacion" in t:
+        return "Graduación"
+    for opcion in OPCIONES_TIPO:
+        if normalizar_clave(opcion) == t:
+            return opcion
+    return "Otro"
+
+
 def fecha_en_texto(iso):
     """2026-12-12 -> sábado 12 de diciembre de 2026 (igual que datos.js)."""
     import datetime
@@ -125,6 +152,7 @@ def valores_del_evento(fila, base_url=BASE_URL):
     codigo = valor_de(fila, "codigo_evento")
     valores["link_de_la_invitacion"] = f"{base_url}?evento={codigo}" if codigo else ""
     valores["fecha_del_evento_en_texto"] = fecha_en_texto(valor_de(fila, "fecha_evento"))
+    valores["tipo_de_evento"] = tipo_para_ghl(valores["tipo_de_evento"])
 
     # Guarda dura: los custom values de marca son de la sub-cuenta, no del
     # evento. Escribir sobre ellos ya pisó una vez el WhatsApp de Invitia.
@@ -313,7 +341,7 @@ def self_test():
         "whatsapp_de_contacto": "+56 9 1234 5678",
     }
     v = valores_del_evento(fila, "https://ejemplo.cl/eventos/")
-    assert v["tipo_de_evento"] == "matrimonio", v
+    assert v["tipo_de_evento"] == "Matrimonio", v   # tal como lo exige la lista de GHL
     assert v["nombre_del_anfitrion"] == "Mimi & Beto", v
     assert v["link_de_la_invitacion"] == "https://ejemplo.cl/eventos/?evento=mimi-2026", v
     assert v["fecha_limite_de_confirmacion"] == "", v      # ausente = vacío, no falla
@@ -339,6 +367,15 @@ def self_test():
     assert not set(v13) & MARCA, "la carga nunca puede tocar un custom value de marca"
     assert v13["fecha_del_evento_en_texto"] == "sábado 12 de diciembre de 2026", v13["fecha_del_evento_en_texto"]
     assert fecha_en_texto("no es fecha") == ""
+    assert tipo_para_ghl("matrimonio") == "Matrimonio"
+    assert tipo_para_ghl("Boda") == "Matrimonio"
+    assert tipo_para_ghl("cumpleanos") == "Cumpleaños"
+    assert tipo_para_ghl("Evento corporativo") == "Evento corporativo"
+    assert tipo_para_ghl("graduación") == "Graduación"
+    assert tipo_para_ghl("Baby shower") == "Baby shower"
+    assert tipo_para_ghl("algo raro") == "Otro"
+    assert tipo_para_ghl("") == ""
+    assert valores_del_evento({"tipo_de_evento": "matrimonio"})["tipo_de_evento"] == "Matrimonio"
     print("self-test OK: 13 custom values de evento, ninguno choca con los de marca")
     print("             mapeo custom value -> custom field completo")
 
