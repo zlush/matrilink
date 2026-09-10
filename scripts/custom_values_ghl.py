@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Actualiza los custom values de evento en GoHighLevel.
+"""Gestiona los custom values de evento en GoHighLevel.
 
-Toma los datos de un evento —del JSON de respaldo o de una fila de la hoja de
-respuestas del formulario— y los escribe en los 11 custom values de la
-sub-cuenta, incluyendo el link de la invitación publicada en Vercel.
+Mantiene un custom value por cada custom field de evento del contacto, que es
+lo que la automatización copia al etiquetar al invitado, y los carga con los
+datos de un evento —del JSON de respaldo o de una fila de la hoja de respuestas.
 
     python scripts/custom_values_ghl.py                      # dry-run del demo
     python scripts/custom_values_ghl.py --origen hoja.csv --evento mimi-2026
     python scripts/custom_values_ghl.py --send               # aplica los cambios
-    python scripts/custom_values_ghl.py --self-test          # prueba el mapeo
+    python scripts/custom_values_ghl.py --crear-faltantes    # crea los que no existan
+    python scripts/custom_values_ghl.py --renombrar          # agrupa con el prefijo
+    python scripts/custom_values_ghl.py --self-test          # prueba sin tocar la red
 
 El token va en la variable de entorno GHL_PIT (Settings → Private Integrations
 en GHL). Nunca se escribe en el repositorio ni se imprime.
@@ -139,6 +141,107 @@ def listar_custom_values(token):
     return porkey
 
 
+
+# ---------------------------------------------------------------------------
+# Custom values análogos a los custom fields del evento
+#
+# Los 13 campos que la automatización copia al contacto necesitan un custom
+# value equivalente. Once ya existen; estos son los que faltan.
+#
+# Se crean con el nombre SIN tildes y se renombran después: GHL arma el
+# fieldKey borrando las letras acentuadas ("Código" da cdigo), y la propia
+# documentación confirma que renombrar no toca la clave.
+#
+# Las carpetas no se pueden asignar por API —POST /customValues solo acepta
+# name y value—, así que el prefijo deja los valores juntos por orden
+# alfabético y la carpeta se arma en Settings → Custom Values → Folders.
+# ---------------------------------------------------------------------------
+
+PREFIJO = "Evento · "
+
+CANONICOS = [
+    ("codigo_del_evento", "Codigo del evento", "Código del evento"),
+    ("tipo_de_evento", "Tipo de evento", "Tipo de evento"),
+    ("nombre_del_evento", "Nombre del evento", "Nombre del evento"),
+    ("nombre_del_anfitrion", "Nombre del anfitrion", "Nombre del anfitrión"),
+    ("fecha_del_evento", "Fecha del evento", "Fecha del evento"),
+    ("fecha_del_evento_en_texto", "Fecha del evento en texto", "Fecha del evento en texto"),
+    ("hora_del_evento", "Hora del evento", "Hora del evento"),
+    ("lugar_del_evento", "Lugar del evento", "Lugar del evento"),
+    ("direccion_del_evento", "Direccion del evento", "Dirección del evento"),
+    ("link_de_ubicacion", "Link de ubicacion", "Link de ubicación"),
+    ("link_de_la_invitacion", "Link de la invitacion", "Link de la invitación"),
+    ("fecha_limite_de_confirmacion", "Fecha limite de confirmacion", "Fecha límite de confirmación"),
+    ("whatsapp_de_contacto", "Whatsapp de contacto", "WhatsApp de contacto"),
+]
+
+# Los que ya existían el 2026-09-08, para poder planificar sin red.
+YA_EXISTIAN = {k for k, _, _ in CANONICOS} - {"codigo_del_evento", "fecha_del_evento_en_texto"}
+
+
+def faltantes(existentes):
+    """Claves canónicas que no están en la sub-cuenta."""
+    return [c for c in CANONICOS if c[0] not in existentes]
+
+
+def crear_faltantes(token, prefijo, aplicar):
+    existentes = listar_custom_values(token) if aplicar else {k: {} for k in YA_EXISTIAN}
+    faltan = faltantes(existentes)
+
+    print(f"Custom values de evento esperados: {len(CANONICOS)}")
+    print(f"Ya existen: {len(CANONICOS) - len(faltan)}   ·   Faltan: {len(faltan)}")
+    print()
+    if not faltan:
+        print("No hay nada que crear.")
+    for clave, sin_tildes, bonito in faltan:
+        destino = prefijo + bonito
+        print(f"  + {clave}")
+        print(f"      crear como  '{sin_tildes}'   -> fieldKey {{{{ custom_values.{clave} }}}}")
+        print(f"      renombrar a '{destino}'")
+        if not aplicar:
+            continue
+        r = curl("POST", f"/locations/{LOCATION_ID}/customValues", token,
+                 {"name": sin_tildes, "value": ""})
+        cv = r.get("customValue") or r
+        cv_id = cv.get("id")
+        if not cv_id:
+            print(f"      ✗ no se pudo crear: {str(r)[:160]}")
+            continue
+        real = normalizar_clave((cv.get("fieldKey") or "").replace("custom_values.", "").strip("{} "))
+        if real != clave:
+            print(f"      ! GHL generó la clave '{real}' en vez de '{clave}'")
+        r2 = curl("PUT", f"/locations/{LOCATION_ID}/customValues/{cv_id}", token,
+                  {"name": destino, "value": ""})
+        ok = "customValue" in r2 or "id" in r2
+        print(f"      {'✓ creado y renombrado' if ok else '✗ creado, pero falló el renombrado'}")
+
+    if aplicar:
+        print()
+        print("Falta un paso manual: crear la carpeta en Settings → Custom Values → Folders")
+        print("y mover ahí los valores con Bulk Actions. La API no permite asignar carpeta.")
+
+
+def renombrar_con_prefijo(token, prefijo, aplicar):
+    """Antepone el prefijo a los custom values de evento que ya existen."""
+    existentes = listar_custom_values(token)
+    tocados = 0
+    for clave, _, bonito in CANONICOS:
+        cv = existentes.get(clave)
+        if not cv:
+            continue
+        actual = cv.get("name", "")
+        destino = prefijo + bonito
+        if actual == destino:
+            continue
+        print(f"  {actual}  ->  {destino}")
+        tocados += 1
+        if aplicar:
+            curl("PUT", f"/locations/{LOCATION_ID}/customValues/{cv['id']}", token,
+                 {"name": destino, "value": cv.get("value", "")})
+    print()
+    print(f"{tocados} por renombrar. La clave no cambia al renombrar.")
+
+
 def self_test():
     fila = {
         "codigo_del_evento": "mimi-2026",
@@ -159,7 +262,15 @@ def self_test():
     assert len(v) == 11, f"se esperaban 11 custom values, hay {len(v)}"
     assert normalizar_clave("Fecha límite de confirmación") == "fecha_limite_de_confirmacion"
     assert valores_del_evento({})["link_de_la_invitacion"] == ""
-    print("self-test OK: 11 custom values, alias y tildes resueltos")
+    faltan = [c[0] for c in faltantes(YA_EXISTIAN)]
+    assert faltan == ["codigo_del_evento", "fecha_del_evento_en_texto"], faltan
+    assert len(CANONICOS) == 13, len(CANONICOS)
+    assert not faltantes({c[0] for c in CANONICOS}), "con todos presentes no debe faltar ninguno"
+    # El nombre para crear no lleva tildes: es lo que deja el fieldKey limpio.
+    for clave, sin_tildes, _ in CANONICOS:
+        assert normalizar_clave(sin_tildes) == clave, (sin_tildes, clave)
+    print("self-test OK: 11 custom values del evento, alias y tildes resueltos")
+    print("             13 canónicos, faltan " + ", ".join(faltan))
 
 
 def main():
@@ -170,10 +281,30 @@ def main():
     ap.add_argument("--base-url", default=BASE_URL, help="URL de la plantilla publicada")
     ap.add_argument("--send", action="store_true", help="aplica los cambios (por defecto solo muestra)")
     ap.add_argument("--self-test", action="store_true", help="prueba el mapeo sin tocar la red")
+    ap.add_argument("--crear-faltantes", action="store_true",
+                    help="crea los custom values de evento que no existan")
+    ap.add_argument("--renombrar", action="store_true",
+                    help="antepone el prefijo a los custom values de evento ya creados")
+    ap.add_argument("--prefijo", default=PREFIJO, help="prefijo de agrupación (por defecto 'Evento · ')")
     args = ap.parse_args()
 
     if args.self_test:
         return self_test()
+
+    if args.crear_faltantes or args.renombrar:
+        token = os.environ.get("GHL_PIT", "").strip()
+        if args.send and not token:
+            raise SystemExit("Falta el token: exporta GHL_PIT con el Private Integration Token.")
+        if args.crear_faltantes:
+            crear_faltantes(token, args.prefijo, args.send)
+        if args.renombrar:
+            if not token:
+                raise SystemExit("--renombrar necesita GHL_PIT para leer los nombres actuales.")
+            renombrar_con_prefijo(token, args.prefijo, args.send)
+        if not args.send:
+            print()
+            print("Dry-run: no se creó ni renombró nada. Agrega --send para aplicar.")
+        return
 
     fila = leer_fila(args.origen, args.evento)
     valores = valores_del_evento(fila, args.base_url)

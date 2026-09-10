@@ -40,6 +40,11 @@ crearlos como custom fields de contacto:
 evento" produce `contact.cdigo_del_evento`. Al renombrar, el fieldKey ya no
 cambia.
 
+**Cada uno tiene su custom value análogo**, que es lo que la automatización
+copia al contacto. Once ya existen en la sub-cuenta; los dos que faltan
+—`codigo_del_evento` y `fecha_del_evento_en_texto`— los crea
+`scripts/custom_values_ghl.py --crear-faltantes --send`.
+
 **Fecha del evento va dos veces, y no es redundancia.** El campo DATE sirve para
 que el workflow dispare "3 días antes", pero al imprimirlo en un mensaje sale en
 formato crudo. El campo TEXT es el que se lee bien: "sábado 12 de diciembre".
