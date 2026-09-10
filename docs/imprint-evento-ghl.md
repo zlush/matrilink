@@ -103,6 +103,26 @@ En **Automation → Workflows**:
 Después, la etapa de la oportunidad sigue al `estado_de_confirmacion` —Invitado,
 Confirmado, No asiste, Asistió— y el pipeline funciona como tablero del evento.
 
+## Activar un evento desde la hoja
+
+`scripts/apps-script/activar-evento.gs` agrega un menú a la hoja de respuestas.
+Seleccionas una celda de la fila del evento y **Invitia → Activar este evento**:
+te muestra cuál está activo, avisa si esa fila no es la respuesta más reciente
+de ese código, pide confirmación y escribe los 13 custom values. Después deja la
+marca de tiempo en la columna "Activado en GHL".
+
+Para instalarlo: en la hoja, **Extensions → Apps Script**, pegar el archivo,
+guardar y usar **Invitia → Guardar token de GoHighLevel** una vez. El token
+queda en Script Properties de esa hoja, no en el código ni en el repositorio.
+El menú aparece al recargar la hoja.
+
+`Run → probarMapeo` en el editor de Apps Script revisa el armado de los 13
+valores sin tocar GoHighLevel.
+
+**Una fila por envío, no por evento.** Si el cliente corrige un dato y reenvía
+el formulario, quedan dos filas con el mismo código. Gana la última: así lo
+resuelven el menú, el script de Python y la landing.
+
 ## Crearlos con el script
 
 ```bash

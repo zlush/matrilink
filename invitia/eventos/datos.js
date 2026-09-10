@@ -75,8 +75,11 @@
   function buscarEvento(objetos, codigo) {
     const buscado = String(codigo || "").trim().toLowerCase();
     if (!buscado) return null;
-    return (objetos || []).find(o =>
-      valorDe(o, "codigo_evento").toLowerCase() === buscado) || null;
+    // La última coincidencia, no la primera: Google Forms agrega una fila por
+    // envío, así que una corrección del cliente queda más abajo en la hoja.
+    const coincidencias = (objetos || []).filter(o =>
+      valorDe(o, "codigo_evento").toLowerCase() === buscado);
+    return coincidencias.length ? coincidencias[coincidencias.length - 1] : null;
   }
 
   // ---------- contenido ----------

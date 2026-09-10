@@ -145,11 +145,16 @@ def leer_fila(origen, codigo=""):
     cabecera = [normalizar_clave(c) for c in filas[0]]
     objetos = [dict(zip(cabecera, fila)) for fila in filas[1:]]
     if not codigo:
-        return objetos[0]
-    for o in objetos:
-        if valor_de(o, "codigo_evento").lower() == codigo.strip().lower():
-            return o
-    raise SystemExit(f"No hay ninguna fila con código '{codigo}' en {origen}")
+        return objetos[-1]
+    # La última, no la primera: Forms agrega una fila por envío y la corrección
+    # más reciente queda más abajo en la hoja.
+    coincidencias = [o for o in objetos
+                     if valor_de(o, "codigo_evento").lower() == codigo.strip().lower()]
+    if not coincidencias:
+        raise SystemExit(f"No hay ninguna fila con código '{codigo}' en {origen}")
+    if len(coincidencias) > 1:
+        print(f"Aviso: {len(coincidencias)} respuestas con el código '{codigo}'; se usa la última.")
+    return coincidencias[-1]
 
 
 def curl(metodo, ruta, token, cuerpo=None):

@@ -304,3 +304,15 @@ test("la lista de novios se lee desde el título natural de la columna", () => {
     "Código del evento,Link lista de novios\nmimi-2026,https://falabella.com/lista/1"));
   assert.strictEqual(D.filaAEvento(objs[0]).listaNovios, "https://falabella.com/lista/1");
 });
+
+test("con varias respuestas del mismo evento gana la última", () => {
+  // Google Forms agrega una fila por envío: si el cliente corrige un dato y
+  // reenvía, la versión buena es la de abajo, no la primera.
+  const objs = D.aObjetos(D.parseCSV(
+    "Código del evento,Lugar nombre\n" +
+    "mimi-2026,Salón viejo\n" +
+    "otro-2026,Otro lugar\n" +
+    "mimi-2026,Salón nuevo"));
+  assert.strictEqual(D.buscarEvento(objs, "mimi-2026").lugar_nombre, "Salón nuevo");
+  assert.strictEqual(D.buscarEvento(objs, "otro-2026").lugar_nombre, "Otro lugar");
+});
